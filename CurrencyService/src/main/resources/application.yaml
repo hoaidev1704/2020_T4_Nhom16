@@ -1,0 +1,16 @@
+services:
+  crawler:
+    baseUrl: localhost:8080/
+    crawl: crawl
+    all-data: getAllExchangeData
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ware_house?useUnicode=yes&amp;characterEncoding=UTF-8
+    username: postgres
+    password: admin
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    generate-ddl: true
+    show-sql: true
