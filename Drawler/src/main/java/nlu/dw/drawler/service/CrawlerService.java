@@ -2,11 +2,15 @@ package nlu.dw.drawler.service;
 
 import nlu.dw.drawler.model.Crawler;
 import nlu.dw.drawler.model.DataRecord;
+import org.hibernate.Session;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -16,6 +20,8 @@ import java.util.*;
 
 @Service
 public class CrawlerService implements ICrawlerService{
+    @PersistenceContext
+    private EntityManager entityManager;
     @Override
     public List<DataRecord> getDataFromTheBankPage () throws IOException {
         List<DataRecord> data = new ArrayList<>();
@@ -50,13 +56,19 @@ public class CrawlerService implements ICrawlerService{
                 for (int j = 0; j < dataLine.size(); j++) {
                     Elements dataCell = dataLine.get(j).select("td");
 
-                    String symbol = dataCell.get(0).text(), currentName = dataCell.get(1).text();
+                    String symbol = dataCell.get(0).text(), currencyName = dataCell.get(1).text();
                     double buyCash = Double.parseDouble(dataCell.get(2).text().trim().replaceAll(",", "")),
                             buyTransfer = Double.parseDouble(dataCell.get(3).text().trim().replaceAll(",", "")),
                             price = Double.parseDouble(dataCell.get(4).text().trim().replaceAll(",", ""));
                     LocalDateTime now = LocalDateTime.now();
-                    DataRecord r = new DataRecord(UUID.randomUUID(), now, now ,dateTimeUpdate, Crawler.URL_THE_BANK_DOMAIN, bankName, currentName, symbol, buyCash,
-                            buyTransfer, price);
+                    DataRecord r = DataRecord.builder().getDate(now).updateDate(now)
+                                    .urlSource(Crawler.URL_THE_BANK_DOMAIN)
+                                    .bank(bankName)
+                                    .currencyName(currencyName)
+                                    .currencySymbol(symbol)
+                                    .buyCash(buyCash)
+                                    .buyTransfer(buyTransfer)
+                                    .price(price).build();
                     data.add(r);
                 }
             } catch (Exception e) {
@@ -96,21 +108,37 @@ public class CrawlerService implements ICrawlerService{
             for (int j = 2; j < dataRows.size(); j++) {
                 Elements tdTags = dataRows.get(j).select("td");
                 //---------------------------------------------------------
-                String bankName = entryList.get(i).getKey(), currentName = tdTags.get(0).text(),
-                        symbol = tdTags.get(1).select("b a").text();
+                String bankName = entryList.get(i).getKey();
+                String currentName = tdTags.get(0).text();
+                String symbol = tdTags.get(1).select("b a").text();
                 LocalDateTime now = LocalDateTime.now();
                 DataRecord dataRecord = DataRecord.builder()
-                        .id(UUID.randomUUID())
                         .getDate(now)
                         .updateDate(now)
                         .bank(bankName)
+                        .currencyName(currentName)
+                        .currencySymbol(symbol)
                         .urlSource(detailUrl)
                         .build();
                 convertCashFromPage(dataRecord, tdTags);
+                data.add(dataRecord);
                 //---------------------------------------------------------
             }
         }
         return data;
+    }
+
+    @Override
+    public void loadDataToStaging (String filePath) {
+        File csvFolder = FileHelper.getCSVCurrentFolder();
+        if(csvFolder.isDirectory()) {
+            Optional.ofNullable(csvFolder.listFiles()).ifPresent(files -> Arrays.stream(files).forEach(file -> {
+                        String loadDataQuery = "LOAD DATA INFILE '" + file.getAbsoluteFile() + "' INTO TABLE data " +
+                                "FIELDS ENCLOSED BY '\"' TERMINATED BY ',' ESCAPED BY '\"' LINES TERMINATED BY '\\n'";
+                        entityManager.createNativeQuery(loadDataQuery).getSingleResult();
+                    }
+            ));
+        }
     }
 
     private void convertCashFromPage (DataRecord dataRecord, Elements dataCell) {
