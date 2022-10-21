@@ -7,53 +7,85 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
 @Component
 public class FileHelper {
-    public void writeRecordData(List<DataRecord> recordList) throws IOException {
-        if(recordList.isEmpty()) return;
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-        String fileName = "data_" + dtf.format(recordList.get(0).getGetDate()) + ".csv";
-        String pathFolder = "."+File.separatorChar+"csvFile";
-        File theDir = new File(pathFolder);
+    private static final String ROOT_CSV_FILE = "." + File.separatorChar + "csvFiles";
+    private static final String ROOT_CSV_LOG_FILE = "." + File.separatorChar + "log_csvFiles";
+    public RecordAudit writeRecordData(List<DataRecord> recordList) throws IOException {
+        if(recordList.isEmpty()) return null;
+        File theDir = new File(ROOT_CSV_FILE);
         if (!theDir.exists()){
             theDir.mkdirs();
         }
-
-        FileWriter dataFile = new FileWriter(pathFolder + File.separatorChar + fileName);
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+        String fileName = "data_" + dtf.format(recordList.get(0).getGetDate()) + ".csv";
+        FileWriter dataFile = new FileWriter(getCSVCurrentFolder().getAbsolutePath() + File.separatorChar + fileName);
         DataRecord firstRecord = recordList.get(0);
         DataRecord lastRecord = recordList.get(recordList.size()-1);
         for (DataRecord r : recordList) {
-            r.setId(UUID.randomUUID());
             dataFile.write(r.getId().toString() + "," + dtf.format(r.getGetDate()) + "," + dtf.format(r.getUpdateDate()) + ","
                     + r.getUrlSource() + "," + r.getBank() + "," + r.getCurrencyName() + "," + r.getCurrencySymbol()
                     + "," + r.getBuyCash() + "," + r.getBuyTransfer() + "," + r.getPrice() + "\n");
         }
-        RecordAudit recordAudit = RecordAudit.builder().id(UUID.randomUUID().toString())
+        RecordAudit recordAudit = RecordAudit.builder()
                 .recordNumber(recordList.size())
                 .fileName(fileName)
                 .startDate(firstRecord.getGetDate())
                 .endDate(lastRecord.getGetDate())
+                .status(true)
                 .build();
-        writeAudit(recordAudit);
         dataFile.close();
+        return recordAudit;
     }
 
 
     public void writeAudit(RecordAudit recordAudit) throws IOException {
+        File rootAuditDir = new File(ROOT_CSV_LOG_FILE);
+        if (!rootAuditDir.exists()){
+            rootAuditDir.mkdirs();
+        }
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
         String fileName = dtf.format(recordAudit.getStartDate())+ "--" + dtf.format(recordAudit.getEndDate());
-        String pathFolder = "."+File.separatorChar+"log_csvFile";
+        FileWriter logWrite = null;
+        try {
+            logWrite = new FileWriter(getLogCSVCurrentFolder().getAbsolutePath() + File.separatorChar + fileName +".csv");
+            logWrite.write(recordAudit.getId().toString()+","+recordAudit.getStartDate()+","+ recordAudit.getEndDate()+","+ recordAudit.getFileName()+","+ recordAudit.isStatus()+","+ recordAudit.getRecordNumber()+"\n");
+        } catch (Exception io) {
+            throw new IOException(io);
+        } finally {
+            if(logWrite != null) {
+                logWrite.flush();
+                logWrite.close();
+            }
+        }
+
+
+    }
+
+    public static File getCSVCurrentFolder() {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String pathFolder = ROOT_CSV_FILE + File.separatorChar + dtf.format(LocalDateTime.now());
         File theDir = new File(pathFolder);
         if (!theDir.exists()){
             theDir.mkdirs();
         }
-        FileWriter logWrite = new FileWriter(pathFolder + File.separatorChar + fileName +".csv");
-        logWrite.write(recordAudit.getStartDate()+","+ recordAudit.getEndDate()+","+ recordAudit.getFileName()+","+ recordAudit.isStatus()+","+ recordAudit.getRecordNumber()+"\n");
-        logWrite.close();
+        return theDir;
     }
+
+    public static File getLogCSVCurrentFolder() {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String pathFolder = ROOT_CSV_LOG_FILE + File.separatorChar + "Log_" + dtf.format(LocalDateTime.now());
+        File theDir = new File(pathFolder);
+        if (!theDir.exists()){
+            theDir.mkdirs();
+        }
+        return theDir;
+    }
+
 
 }

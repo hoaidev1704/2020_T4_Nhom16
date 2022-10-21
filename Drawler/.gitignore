@@ -34,5 +34,5 @@ build/
 
 csvFile/
 log_csvFile/
-csvFile/*
-log_csvFile/*
+csvFiles/*
+Log_csvFiles/*
