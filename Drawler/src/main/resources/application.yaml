@@ -1,3 +1,5 @@
+services:
+  zoneId: Asia/Ho_Chi_Minh
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres?useUnicode=yes&amp;characterEncoding=UTF-8

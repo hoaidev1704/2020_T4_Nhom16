@@ -1,6 +1,7 @@
 package nlu.dw.drawler.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -28,7 +29,10 @@ public class DataRecord {
             strategy = "org.hibernate.id.UUIDGenerator"
     )
     private String id;
-    private LocalDateTime getDate, updateDate;
+    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime getDate;
+    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime updateDate;
     private String urlSource, currency, bank, currencySymbol, currencyName;
     private double buyCash, buyTransfer, price;
 

@@ -7,7 +7,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ResponseRequest {
+public class ResponseRequest<T extends Object> {
     public enum ResponseStatus {
         SUCCESS("success"), FAILED("error");
         String description;
@@ -20,6 +20,6 @@ public class ResponseRequest {
     }
 
     private ResponseStatus status;
-    private Object data;
+    private T data;
     private String message;
 }

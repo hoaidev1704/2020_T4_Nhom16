@@ -1,16 +1,20 @@
-version: '2'
-
+version: "3.6"
 services:
   postgresql:
     image: postgres
     container_name: postgres
+    restart: always
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_PASSWORD=admin
       - POSTGRES_USER=postgres
     volumes:
+      - ./docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
       - pgData:/var/lib/postgresql/data
+    networks:
+      backend:
+        ipv4_address: 10.5.0.9
   web:
     image: drawler
     container_name: drawler-app
@@ -25,5 +29,15 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     depends_on:
       - postgresql
+    networks:
+      backend:
+        ipv4_address: 10.5.0.8
 volumes:
   pgData:
+networks:
+  backend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1

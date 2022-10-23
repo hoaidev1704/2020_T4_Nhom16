@@ -2,26 +2,27 @@ package nlu.dw.drawler.service;
 
 import nlu.dw.drawler.model.Crawler;
 import nlu.dw.drawler.model.DataRecord;
-import org.hibernate.Session;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.io.File;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
 public class CrawlerService implements ICrawlerService{
     @PersistenceContext
     private EntityManager entityManager;
+    
+    @Value("${services.zoneId}")
+    private String zoneId;
     @Override
     public List<DataRecord> getDataFromTheBankPage () throws IOException {
         List<DataRecord> data = new ArrayList<>();
@@ -153,6 +154,10 @@ public class CrawlerService implements ICrawlerService{
     private  String convertDateFormat(String date) {
         char[] cs = date.toCharArray();
         return ""+cs[6]+cs[7]+cs[8]+cs[9]+"-"+cs[3]+cs[4]+"-"+cs[0]+cs[1];
+    }
+    
+    private LocalDateTime toDay() {
+        return LocalDateTime.now(ZoneId.of(zoneId));
     }
 
 

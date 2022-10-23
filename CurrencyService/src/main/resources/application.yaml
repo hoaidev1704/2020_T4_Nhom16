@@ -1,16 +1,26 @@
 services:
+  zoneId : Asia/Ho_Chi_Minh
   crawler:
-    baseUrl: localhost:8080/
+    baseUrl: http://localhost:8080/
     crawl: crawl
     all-data: getAllExchangeData
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/ware_house?useUnicode=yes&amp;characterEncoding=UTF-8
+    url: jdbc:postgresql://localhost:5432/ware_house?useUnicode=true&amp;characterEncoding=UTF-8
     username: postgres
     password: admin
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     generate-ddl: true
     show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+server:
+  port: 8081
+logging:
+  level:
+    org.hibernate.sql: Debug
+    org.hibernate.type: TRACE
