@@ -1,5 +1,8 @@
 package nl.dw.currency.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.SchemaProperties;
 import lombok.*;
 
 import javax.persistence.*;
@@ -17,7 +20,10 @@ public class Exchange {
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE)
 	private Long id;
-	private LocalDateTime getDate, updateDate;
+	@JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
+	private LocalDateTime getDate;
+	@JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
+	private LocalDateTime updateDate;
 	private String urlSource;
 	private double buyCash, buyTransfer, price;
 	@ManyToOne(cascade = CascadeType.ALL)
