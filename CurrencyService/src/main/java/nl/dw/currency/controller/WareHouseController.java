@@ -11,17 +11,23 @@ import nl.dw.currency.repository.IExchangeRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import javax.persistence.EntityNotFoundException;
+import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/exchange")
 public class WareHouseController {
 	@Value("${services.crawler.baseUrl}")
 	private String crawlerBaseURL;
@@ -37,7 +43,7 @@ public class WareHouseController {
 	private final IExchangeRepository exchangeRepository;
 	
 	@GetMapping("/getDataFromStaging")
-	public ResponseEntity<ResponseRequest> getDataFromStaging () {
+	public ResponseEntity<ResponseRequest<StagingResponse>> getDataFromStaging () {
 		RestTemplate restTemplate = new RestTemplate();
 		ResponseEntity<ResponseRequest> response = restTemplate.getForEntity(crawlerBaseURL + allDataServiceURL,
 				ResponseRequest.class);
@@ -82,10 +88,36 @@ public class WareHouseController {
 				stagingResponse.setCompletedTime(localDateTime);
 			}
 		}
-		return new ResponseEntity<>(
-				ResponseRequest.builder().data(stagingResponse).status(ResponseRequest.ResponseStatus.SUCCESS).build(),
-				HttpStatus.OK);
-		
-		
+		ResponseRequest<StagingResponse> responseRequest = new ResponseRequest<>();
+		responseRequest.setData(stagingResponse);
+		responseRequest.setStatus(ResponseRequest.ResponseStatus.SUCCESS);
+		return new ResponseEntity<>(responseRequest, HttpStatus.OK);
+	}
+	
+	@GetMapping("/all")
+	public ResponseEntity<ResponseRequest<List<Exchange>>> getAllExchange () {
+		ResponseRequest<List<Exchange>> responseRequest = new ResponseRequest<>();
+		Iterator<Exchange> exchangeIterator = exchangeRepository.findAll().iterator();
+		List<Exchange> exchanges = new ArrayList<>();
+		exchangeIterator.forEachRemaining(exchanges::add);
+		responseRequest.setData(exchanges);
+		responseRequest.setStatus(ResponseRequest.ResponseStatus.SUCCESS);
+		return new ResponseEntity<>(responseRequest, HttpStatus.OK);
+	}
+	
+	@RequestMapping(value = "/{exchangeId}", method = RequestMethod.GET)
+	public ResponseEntity<ResponseRequest<Exchange>> getAllExchange (@PathVariable @NotNull @DecimalMin("0") Long exchangeId) {
+		ResponseRequest<Exchange> responseRequest = new ResponseRequest<>();
+		try {
+			Exchange exchange = exchangeRepository.findById(exchangeId).orElseThrow(() -> new EntityNotFoundException(
+					"Exchange id " + exchangeId +
+					" not exist"));
+			responseRequest.setData(exchange);
+			responseRequest.setStatus(ResponseRequest.ResponseStatus.SUCCESS);
+		}catch (Exception ex) {
+			responseRequest.setStatus(ResponseRequest.ResponseStatus.FAILED);
+			responseRequest.setMessage(ex.getMessage());
+		}
+		return new ResponseEntity<>(responseRequest, HttpStatus.OK);
 	}
 }
