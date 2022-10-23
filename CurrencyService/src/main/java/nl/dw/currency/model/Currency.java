@@ -1,16 +1,16 @@
 package nl.dw.currency.model;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 
 @Entity
-@Table(name="Currency", schema = "public")
+@Table(name="Currency", schema = "public", uniqueConstraints = @UniqueConstraint(columnNames="symbol"))
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Currency {
     @Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)
