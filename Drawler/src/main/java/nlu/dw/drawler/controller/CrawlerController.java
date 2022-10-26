@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -26,7 +27,7 @@ public class CrawlerController {
     private final ICrawlerService crawlerService;
     private final FileHelper fileHelper;
     private final IDataRepository iDataRepository;
-    private final IAuditRepository iAuditRepository;
+    private final IAuditRepository auditRepository;
     @GetMapping("/getAllExchangeData")
     public ResponseEntity<ResponseRequest> getAllExchangeData() {
         Iterator<DataRecord> iterator = iDataRepository.findAll().iterator();
@@ -42,26 +43,25 @@ public class CrawlerController {
             if(!theBankData.isEmpty()){
                 List<DataRecord> resultTheBankData =  new ArrayList<>();
                 iDataRepository.saveAll(theBankData).iterator().forEachRemaining(resultTheBankData::add);
-                RecordAudit theBankAudit = fileHelper.writeRecordData(resultTheBankData);
+                RecordAudit theBankAudit = fileHelper.getAuditInfo(resultTheBankData);
                 if(theBankAudit != null) {
-                    if(!iAuditRepository.existsRecordAuditByFileName(theBankAudit.getFileName())){
-                        fileHelper.writeAudit(iAuditRepository.save(theBankAudit));
-                    }
+                    auditRepository.save(theBankAudit);
                 }
             }
 
             if(!bankData.isEmpty()){
                 List<DataRecord> resultBankData =  new ArrayList<>();
                 iDataRepository.saveAll(bankData).iterator().forEachRemaining(resultBankData::add);
-                RecordAudit bankAudit = fileHelper.writeRecordData(resultBankData);;
+                RecordAudit bankAudit = fileHelper.getAuditInfo(resultBankData);;
                 if(bankAudit != null) {
-                    if(!iAuditRepository.existsRecordAuditByFileName(bankAudit.getFileName())){
-                        fileHelper.writeAudit(iAuditRepository.save(bankAudit));
-                    }
+                    auditRepository.save(bankAudit);
                 }
             }
 
         }catch (Exception e) {
+            RecordAudit audit = RecordAudit.builder().recordNumber(0).startDate(LocalDateTime.now()).endDate(LocalDateTime.now())
+                    .status(RecordAudit.STATUS.FAIL).build();
+            auditRepository.save(audit);
             return new ResponseEntity<>(ResponseRequest.builder().status(ResponseRequest.ResponseStatus.FAILED)
                     .message(e.getMessage())
                     .build(), HttpStatus.OK);

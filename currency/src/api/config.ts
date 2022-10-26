@@ -1,9 +1,10 @@
 import axios from "axios";
-const api =import.meta.env.VITE_API_URL
+const api =import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL : "http://localhost:7070"
+console.log(api)
 const service = axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL}/exchange`,     
-	// headers: { "Access-Control-Allow-Origin": "*" },
-	// timeout: 20000,
+    baseURL: `${api}/exchange`,     
+	headers: { "Access-Control-Allow-Origin": "*" },
+	timeout: 20000,
 });
 
 
