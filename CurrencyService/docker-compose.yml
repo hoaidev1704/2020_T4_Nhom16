@@ -1,22 +1,43 @@
 version: "3.9"
 services:
+  postgresql:
+    image: postgres
+    container_name: postgres_ware_house
+    restart: always
+    ports:
+      - "6432:6432"
+    environment:
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_USER=postgres
+    volumes:
+      - ./docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
+      - pgData1:/var/lib/postgresql2/data
+    networks:
+      default:
+        ipv4_address: 10.5.0.11
+    command: -p 6432
   web:
     image: warehouse-service
     container_name: warehouse-service
     build:
       context: .
     ports:
-        - "8081:8081"
+        - "7070:7070"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://10.5.0.9:5432/ware_house
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://10.5.0.11:6432/ware_house
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=admin
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
       - SERVICES_CRAWLER_BASEURL=http://10.5.0.8:8080/
+      - SERVER_PORT=7070
     networks:
       default:
-         ipv4_address: 10.5.0.5
+        ipv4_address: 10.5.0.12
+    depends_on:
+      - postgresql
+volumes:
+  pgData1:
 networks:
   default:
     name: drawler_backend

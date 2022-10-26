@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/exchange")
+@CrossOrigin(origins = "http://localhost:3032")
 public class WareHouseController {
 	@Value("${services.crawler.baseUrl}")
 	private String crawlerBaseURL;
@@ -49,6 +50,7 @@ public class WareHouseController {
 				ResponseRequest.class);
 		StagingResponse stagingResponse = new StagingResponse();
 		stagingResponse.setTotalCompleted(0);
+		List<Exchange> exchangeList = new ArrayList<>();
 		if (response.getStatusCode().equals(HttpStatus.OK)) {
 			ResponseRequest body = response.getBody();
 			if (body.getData() != null) {
@@ -80,7 +82,7 @@ public class WareHouseController {
 						currency = newCurrency;
 					}
 					exchange.setCurrency(currency);
-					exchangeRepository.save(exchange);
+					exchangeList.add(exchange);
 					int completed = stagingResponse.getTotalCompleted() + 1;
 					stagingResponse.setTotalCompleted(completed);
 				});
@@ -88,6 +90,7 @@ public class WareHouseController {
 				stagingResponse.setCompletedTime(localDateTime);
 			}
 		}
+		exchangeRepository.saveAll(exchangeList);
 		ResponseRequest<StagingResponse> responseRequest = new ResponseRequest<>();
 		responseRequest.setData(stagingResponse);
 		responseRequest.setStatus(ResponseRequest.ResponseStatus.SUCCESS);
