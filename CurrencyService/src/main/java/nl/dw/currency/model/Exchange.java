@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
-@Table(name = "Exchange")
+@Table(name = "Exchange", uniqueConstraints = @UniqueConstraint(columnNames={"bank_id","currency_id","urlSource"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,4 +30,12 @@ public class Exchange {
 	private Bank bank;
 	@ManyToOne(cascade = CascadeType.ALL)
 	private Currency currency;
+	
+	@Transient
+	public boolean isExchangeNeedToUpdate(Exchange exchange) {
+		if(this.urlSource != exchange.getUrlSource()) {
+			return false;
+		}
+		return this.buyTransfer != exchange.getBuyTransfer() || this.buyCash != exchange.getBuyCash();
+	}
 }

@@ -22,6 +22,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -82,7 +83,15 @@ public class WareHouseController {
 						currency = newCurrency;
 					}
 					exchange.setCurrency(currency);
-					exchangeList.add(exchange);
+					Optional<Exchange> exTmp = exchangeRepository.findExchangeByBankAndCurrencyAndUrlSource(bank,
+							currency,exchange.getUrlSource());
+					if(exTmp.isPresent()) {
+						if(exchange.isExchangeNeedToUpdate(exTmp.get())) {
+							exchangeList.add(exchange);
+						}
+					} else {
+						exchangeList.add(exchange);
+					}
 					int completed = stagingResponse.getTotalCompleted() + 1;
 					stagingResponse.setTotalCompleted(completed);
 				});
