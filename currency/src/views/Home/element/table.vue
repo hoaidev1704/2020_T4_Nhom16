@@ -24,8 +24,10 @@
 </template>
 <script lang="ts">
 import { NumberDecimal } from "ant-design-vue/lib/input-number/src/utils/MiniDecimal";
-import { defineComponent, onMounted, ref } from "vue";
+import moment from "moment";
+import { defineComponent, onMounted, ref, watch } from "vue";
 import { getDataTable } from "../../../api/TableAPI/table";
+import { useSearch } from "../../../composables";
 
 const columns = [
   { title: "Id", dataIndex: "id", slots: { customRender: "id" } },
@@ -67,22 +69,84 @@ interface Exchange {
 
 export default defineComponent({
   setup() {
-    const dataTable = ref<Exchange>();
+    const dataTable = ref<any>();
+    const { keySearch, dateSelect, dataProject } = useSearch();
+
     const getData = () => {
       getDataTable().then((res: any) => {
         dataTable.value = res.data as Exchange;
-        console.log(res, "res");
+        dataProject.value = res.data;
       });
     };
+    watch(
+      () => keySearch.value,
+      () => {
+        if (keySearch.value != "") {
+          dataTable.value = dataTable.value.filter((e: any) => {
+            return (
+              e.bank.name
+                .toLowerCase()
+                .includes(keySearch.value.toLowerCase()) ||
+              e.currency.name
+                .toLowerCase()
+                .includes(keySearch.value.toLowerCase())
+            );
+          });
+        } else {
+          return (dataTable.value = dataProject.value);
+        }
+      }
+    );
+    watch(
+      () => dateSelect.value,
+      () => {
+        if (dateSelect.value) {
+          dataTable.value = dataTable.value.filter((e: any) => {
+            const date = new Date(dateSelect.value);
+            const getDate = new Date(e.getDate);
+            return (
+              moment(getDate).format("D/MM/YYYY") ===
+              moment(date).format("D/MM/YYYY")
+            );
+          });
+        } else {
+          return (dataTable.value = dataProject.value);
+        }
+      }
+    );
     onMounted(() => {
       getData();
     });
     const handleDowload = (data: any) => {
-      let csv = "";
-      data.forEach(function (row: any) {
+      let dataDowLoad: any = [];
+
+      data = data.map((e: any) => {
+        return {
+          id: e.id,
+          urlSource: e.urlSource,
+          bankName: e.bank.name,
+          currencyName: e.currency.name,
+          price: e.price,
+          buyCash: e.buyCash,
+          buyTransfer: e.buyTransfer,
+          getDate: e.getDate,
+          updateDate: e.updateDate,
+        };
+      });
+
+      const headers = Object.keys(data[0]);
+
+      dataDowLoad.push(headers);
+
+      data.map((e: any) => dataDowLoad.push(Object.values(e)));
+
+      let csv: string = "";
+
+      dataDowLoad.forEach(function (row: any) {
         csv += row.join(",");
         csv += "\n";
-      });    
+      });
+
       const hiddenElement = document.createElement("a");
       hiddenElement.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
       hiddenElement.target = "_blank";

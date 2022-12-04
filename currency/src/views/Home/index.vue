@@ -24,30 +24,22 @@
       </a-menu>
     </a-layout-sider>
     <a-layout>
-      <a-layout-header
-        style="background: #fff; padding: 0"
-        class="w-full px-4"
-      >
+      <a-layout-header style="background: #fff; padding: 0" class="w-full px-4">
         <div class="flex justify-between px-3 items-center mb-2">
           <a-input-search
             v-model:value="valueSearch"
-            placeholder="input search text"
+            placeholder="Search Bank Name, Name Currency..."
             enter-button
             @search="onSearch"
             class="w-1/3"
             size="large"
           />
           <a-space direction="vertical" class="w-1/2 flex">
-            <a-date-picker
-              class="w-2/3"
-              v-model:value="startValue"
-              show-time
-              format="YYYY-MM-DD"
-              placeholder="Date"
-              @openChange="handleStartOpenChange"
-              size="large"
-              
-            />
+            <a-date-picker @change="onChange" class="w-1/2">
+              <template #suffixIcon>
+                <SmileOutlined />
+              </template>
+            </a-date-picker>
           </a-space>
         </div>
       </a-layout-header>
@@ -62,36 +54,35 @@
 </template>
 <script lang="ts">
 import moment, { Moment } from "moment";
-import { HomeOutlined } from "@ant-design/icons-vue";
+import { HomeOutlined, SmileOutlined } from "@ant-design/icons-vue";
 import { defineComponent, ref } from "vue";
 import Table from "./element/table.vue";
+import { useSearch } from "../../composables";
+
 export default defineComponent({
   components: {
     HomeOutlined,
     Table,
+    SmileOutlined,
   },
   setup() {
-    const startValue = ref<Moment | undefined>();
+    const { keySearch, dateSelect } = useSearch();
 
     const valueSearch = ref<string>("");
 
     const onSearch = (searchValue: string) => {
-      console.log("use value", searchValue);
-      console.log("or use this.value", valueSearch.value);
+      keySearch.value = searchValue;
+    };
+    const onChange = (date: Moment, dateString: any) => {
+      dateSelect.value = dateString;    
     };
 
-    const handleStartOpenChange = (date: any) => {};
-    const today = new Date();
-
-    startValue.value = moment(today, "DD/MM/YYYY");
     return {
       collapsed: ref<boolean>(false),
       selectedKeys: ref<string[]>(["1"]),
       onSearch,
       valueSearch,
-      startValue,
-      handleStartOpenChange,
-      moment,
+      onChange,
     };
   },
 });
