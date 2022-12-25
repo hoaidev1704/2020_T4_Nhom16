@@ -9,7 +9,13 @@
       <a>{{ text }}</a>
     </template>
     <template
-      #customFilterDropdown="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }"
+      #customFilterDropdown="{
+        setSelectedKeys,
+        selectedKeys,
+        confirm,
+        clearFilters,
+        column,
+      }"
     >
       <div style="padding: 8px">
         <a-input
@@ -29,7 +35,11 @@
           <template #icon><SearchOutlined /></template>
           Search
         </a-button>
-        <a-button size="small" style="width: 90px" @click="handleReset(clearFilters)">
+        <a-button
+          size="small"
+          style="width: 90px"
+          @click="handleReset(clearFilters)"
+        >
           Reset
         </a-button>
       </div>
@@ -37,7 +47,7 @@
     <template #customFilterIcon="{ filtered }">
       <search-outlined :style="{ color: filtered ? '#108ee9' : undefined }" />
     </template>
-    
+
     <template #bank="{ text }">
       <a :id="text.id">{{ text.name }}</a>
     </template>
@@ -49,16 +59,16 @@
     type="primary"
     class="text-left mt-5"
     @click="handleDowload(dataTable)"
-    >Dowload</a-button
-  >
+    >Dowload <DownloadOutlined
+  /></a-button>
 </template>
 <script lang="ts">
-import { SearchOutlined } from "@ant-design/icons-vue";
+import { SearchOutlined, DownloadOutlined } from "@ant-design/icons-vue";
 import { TableColumnType } from "ant-design-vue";
 import { NumberDecimal } from "ant-design-vue/lib/input-number/src/utils/MiniDecimal";
+import { log } from "console";
 import { defineComponent, onMounted, reactive, ref } from "vue";
 import { getDataTable } from "../../../api/TableAPI/table";
-
 
 interface Bank {
   id: string;
@@ -66,7 +76,7 @@ interface Bank {
 }
 
 interface Filter {
-  text : string;
+  text: string;
   value: string;
 }
 
@@ -89,11 +99,15 @@ interface Exchange {
 }
 
 export default defineComponent({
+  components: {
+    SearchOutlined,
+    DownloadOutlined,
+  },
   setup() {
     const dataTable = ref<Exchange>();
     const state = reactive({
-      searchText: '',
-      searchedColumn: '',
+      searchText: "",
+      searchedColumn: "",
     });
     const searchInput = ref();
     const getData = () => {
@@ -101,25 +115,37 @@ export default defineComponent({
         dataTable.value = res.data as Exchange;
       });
     };
-        const columns: TableColumnType<Exchange>[]  = [
+    const columns: TableColumnType<Exchange>[] = [
       { title: "Id", dataIndex: "id", slots: { customRender: "id" } },
-      { title: "Bank Name", dataIndex: "bank", slots: { customRender: "bank" }, customFilterDropdown: true,
-            onFilter: (value, record) =>
-              record.bank.name.toString().toLowerCase().includes(value.toString().toLowerCase()),
-            onFilterDropdownVisibleChange: visible => {
-              if (visible) {
-                setTimeout(() => {
-                  searchInput.value.focus();
-                }, 100);
-              }}
-            },
+      {
+        title: "Bank Name",
+        dataIndex: "bank",
+        slots: { customRender: "bank" },
+        customFilterDropdown: true,
+        onFilter: (value, record) =>
+          record.bank.name
+            .toString()
+            .toLowerCase()
+            .includes(value.toString().toLowerCase()),
+        onFilterDropdownVisibleChange: (visible) => {
+          if (visible) {
+            setTimeout(() => {
+              searchInput.value.focus();
+            }, 100);
+          }
+        },
+      },
       {
         title: "Name Currency",
         dataIndex: "currency",
         slots: { customRender: "currency" },
       },
       { title: "Price", dataIndex: "price" },
-      { title: "Buy Cash", dataIndex: "buyCash" , sorter: (a: Exchange, b: Exchange) => a.buyCash - b.buyCash},
+      {
+        title: "Buy Cash",
+        dataIndex: "buyCash",
+        sorter: (a: Exchange, b: Exchange) => a.buyCash - b.buyCash,
+      },
       { title: "Buy Transfer", dataIndex: "buyTransfer" },
       { title: "Get Date", dataIndex: "getDate" },
       { title: "Update Date", dataIndex: "updateDate" },
@@ -129,28 +155,57 @@ export default defineComponent({
       getData();
     });
     const handleDowload = (data: any) => {
-      let csv = "";
-      data.forEach(function (row: any) {
-        console.log(row);
+      let dataDowLoad: any = [];   
+      
+      data =
+        data.map((e: any) => {
+          return {
+            id: e.id,
+            urlSource: e.urlSource,
+            bankName: e.bank.name,
+            currencyName: e.currency.name,
+            price: e.price,
+            buyCash: e.buyCash,
+            buyTransfer: e.buyTransfer,
+            getDate: e.getDate,
+            updateDate: e.updateDate,
+          };
+        });
+
+      const headers: any = [];
+
+      columns.map((e: any) => {
+        console.log(e.title);
+        headers.push(e.title);
+      });
+
+      dataDowLoad.push(headers);
+
+      data.map((e: any) => dataDowLoad.push(Object.values(e)));
+
+      let csv: string = "";
+
+      dataDowLoad.forEach(function (row: any) {
         csv += row.join(",");
         csv += "\n";
-      });    
+      });
+
       const hiddenElement = document.createElement("a");
       hiddenElement.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
       hiddenElement.target = "_blank";
       hiddenElement.download = `dowload.csv`;
       hiddenElement.click();
     };
-    const handleSearch = (selectedKeys: any, confirm : any, dataIndex : any) => {
+    const handleSearch = (selectedKeys: any, confirm: any, dataIndex: any) => {
       confirm();
       state.searchText = selectedKeys[0];
       state.searchedColumn = dataIndex;
     };
-    const handleReset = (clearFilters : any) => {
+    const handleReset = (clearFilters: any) => {
       clearFilters({
         confirm: true,
       });
-      state.searchText = '';
+      state.searchText = "";
     };
 
     return {
